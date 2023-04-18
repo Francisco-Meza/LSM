@@ -1,22 +1,24 @@
+import serial
 import tkinter as tk
-from tkinter import ttk
-
+from tkinter import ttk, PhotoImage
+def update_image(event):
+    seleccion = listBox.get()
+    image = PhotoImage(file=f"utilidades/{seleccion}.png")
+    label.configure(image=image)
+    label.image = image
 # Crear la ventana principal
 root = tk.Tk()
 root.title("SMAIN")
 root.geometry("400x300")
 
-items = {
-    
-}
-
 # Crear un widget de etiqueta
-label = tk.Label(root, text="Hola Mundo!")
+image = PhotoImage(file="utilidades/a.png")
+label = tk.Label(root, image=image)
 label.pack()
-
+#Combobox
 listBox = ttk.Combobox(
     state="readonly",
-    values= ["Default",
+    values= [
     "A",
     "B",
     "C",
@@ -46,6 +48,8 @@ listBox = ttk.Combobox(
 )
 listBox.set("Default")
 listBox.pack()
+listBox.bind("<<ComboboxSelected>>", update_image)
+
 # Crear un botón
 button = tk.Button(root, text="Cerrar", command=root.quit)
 button.pack()
