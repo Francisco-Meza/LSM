@@ -5,12 +5,12 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QComboBox, QPushButto
 from PyQt5 import QtCore
 
 # Configurar puerto serial
-ser = "123,123,211,23,34"#serial.Serial('COM3', 9600)
+ser = serial.Serial('COM9', 9600)
 time.sleep(2)
 
 # Inicializar variables
 data = []
-labels = []
+#labels = []
 counter = 0
 
 # Definir función para guardar datos
@@ -20,7 +20,7 @@ def save_data():
     with open('training_data.csv', mode='a', newline='') as file:
         writer = csv.writer(file, delimiter=',')
         for i in range(len(data)):
-            writer.writerow(data[i] + [labels[i]])
+            writer.writerow(data[i] + [combobox.currentText()])
             counter += 1
             if counter >= 1000:
                 print('Se han recolectado 1000 datos, deteniendo la recolección...')
@@ -29,14 +29,14 @@ def save_data():
                 return
     print('Se han guardado los datos en el archivo training_data.csv')
     data.clear()
-    labels.clear()
+    #labels.clear()
 
 # Definir función para leer datos del puerto serial
 def read_data():
-    line = ser#ser.readline().decode().strip()
+    line = ser.readline().decode().strip()
     values = line.split(',')
     data.append([float(value) for value in values])
-    labels.append(combobox.currentText())
+    #labels.append(combobox.currentText())
     label_value.setText(f'Valor seleccionado: {combobox.currentText()}')
     sensor_value.setText(f'Valores del sensor: {line}')
 
