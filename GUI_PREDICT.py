@@ -3,6 +3,8 @@ import numpy as np
 from keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import joblib
+import time
+import pyttsx3
 from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget
 
 class MainWindow(QMainWindow):
@@ -28,11 +30,15 @@ class MainWindow(QMainWindow):
         self.current_prediction = QLabel("Esperando predicciones...")
 
         # Inicializar la etiqueta de la palabra actual
-        self.current_word = QLabel("")
+        self.labelx = QLabel("Palabra: ")
+        self.current_word = QLabel("puto")
 
         # Inicializar el botón de reiniciar la palabra
         self.reset_button = QPushButton("Reiniciar")
         self.reset_button.clicked.connect(self.reset_word)
+
+        self.play_button = QPushButton("Hablar")
+        self.play_button.clicked.connect(self.play)
 
         self.start_button = QPushButton("Iniciar")
         self.start_button.clicked.connect(self.predict)
@@ -41,9 +47,12 @@ class MainWindow(QMainWindow):
         vbox = QVBoxLayout()
         vbox.addWidget(self.current_prediction)
         vbox.addWidget(self.current_word)
+        vbox.addWidget(self.labelx)
+
         hbox = QHBoxLayout()
         hbox.addWidget(self.reset_button)
         hbox.addWidget(self.start_button)
+        hbox.addWidget(self.play_button)
         hbox.addStretch(1)
         vbox.addLayout(hbox)
 
@@ -54,28 +63,19 @@ class MainWindow(QMainWindow):
         # Establecer el widget principal como el widget central de la ventana
         self.setCentralWidget(main_widget)
 
-        # Inicializar el contador de predicciones
-        self.prediction_count = 0
-
     def reset_word(self):
         self.current_word.setText("")
-        self.prediction_count = 0
 
     def update_word(self, prediction):
-        self.prediction_count += 1
-        if self.prediction_count >= 50:
-            # Encontrar la clase más común en las últimas 50 predicciones
-            predictions = np.array(self.current_word.text().split())
-            most_common = np.argmax(np.bincount(predictions))
-            word = self.class_labels[most_common]
-            # Agregar la palabra actual a la etiqueta de la palabra
-            self.current_word.setText(f"{self.current_word.text()} {word}")
-            # Reiniciar el contador de predicciones
-            self.prediction_count = 0
+        most_common = max(set(prediction), key = prediction.count)
+        print(most_common)
+        # Agregar la palabra actual a la etiqueta de la palabra
+        self.current_word.setText(f"{self.current_word.text()} {most_common}")
+        # Reiniciar el contador de predicciones
 
     def predict(self):
-        i = 0
-        while True:
+        total = []
+        for i in range(10):
             # Leer una línea de datos del Arduino
             line = self.ser.readline().decode().strip()
 
@@ -95,11 +95,25 @@ class MainWindow(QMainWindow):
             class_label = self.class_labels[class_idx]
 
             # Actualizar la etiqueta de la predicción actual
-            print(class_label)
+            #print(class_label)
+            total.append(class_label)
             #self.current_prediction.setText(f"Predicción: {class_label}")
-            
+            if(i==9):
+                self.update_word(total)
+                total.clear()
+    def play(self):
+        # Inicializar el motor de texto a voz
+        engine = pyttsx3.init()
 
-            # Actualizar la palabra actual si es necesario
+        # Definir el mensaje que se desea reproducir
+        message = self.current_word.text()
+
+        # Establecer la velocidad de reproducción
+        engine.setProperty('rate', 150)
+
+        # Reproducir el mensaje
+        engine.say(message)
+        engine.runAndWait()
 if __name__ == '__main__':
     app = QApplication([])
     window = MainWindow()
