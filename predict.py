@@ -1,67 +1,29 @@
-import sys
-import serial
-import time
 import numpy as np
 import tensorflow as tf
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QPushButton
-from PyQt5 import QtCore
+import serial
 
-# Configurar puerto serial
-ser = serial.Serial('COM9', 9600)
-time.sleep(2)
+# crea la lista de etiquetas de señales de lengua de señas mexicanas
+etiquetas = ['A', 'B', 'C', 'D', 'E', 'F', 'G','H','I','L','M','N','O']
 
-# Cargar modelo
+# carga la red neuronal previamente entrenada
 model = tf.keras.models.load_model('model.h5')
 
-# Definir función para leer datos del puerto serial y hacer predicciones
-def read_data_and_predict():
-    line = ser.readline().decode().strip()
-    value = float(line)
-    distance_label.setText(f'Distancia: {value:.2f}')
-    input_data = np.array([value])
-    input_data = input_data.reshape((1, 1))
-    prediction = model.predict(input_data)[0][0]
-    if prediction >= 0.5:
-        prediction_label.setText(f'Objeto detectado: sí ({prediction:.2f})')
-    else:
-        prediction_label.setText(f'Objeto detectado: no ({prediction:.2f})')
-    QApplication.processEvents()
+# establece la conexión con el puerto serial
+ser = serial.Serial('COM9', 9600) # ajusta el puerto y la velocidad según corresponda
 
-# Definir función para iniciar lectura y predicción de datos
-def start_reading():
-    btn_start.setEnabled(False)
-    btn_stop.setEnabled(True)
-    print('Iniciando lectura y predicción de datos...')
-    while True:
-        read_data_and_predict()
+# función para leer los valores del sensor y realizar una predicción
+def hacer_prediccion():
+    # lee los valores del sensor separados por comas
+    datos = ser.readline().decode('utf-8').strip().split(',')
+    
+    # convierte los valores a números y promedia por sensor
+    promedios = np.mean(np.array(list(map(float, datos))).reshape(18, -1), axis=1)
+    
+    # realiza la predicción y devuelve la etiqueta correspondiente
+    prediccion = etiquetas[np.argmax(model.predict(np.array(promedios).reshape(1, -1)))]
+    return prediccion
 
-# Definir interfaz gráfica
-app = QApplication([])
-window = QWidget()
-layout = QVBoxLayout()
-
-# Etiquetas
-title = QLabel('Detección de objetos')
-distance_label = QLabel('Distancia: ')
-prediction_label = QLabel('Objeto detectado: ')
-
-# Botones
-btn_start = QPushButton('Iniciar lectura')
-btn_start.clicked.connect(start_reading)
-btn_stop = QPushButton('Detener lectura')
-btn_stop.setEnabled(False)
-btn_stop.clicked.connect(lambda: sys.exit())
-
-# Añadir elementos al layout
-layout.addWidget(title)
-layout.addWidget(distance_label)
-layout.addWidget(prediction_label)
-layout.addWidget(btn_start)
-layout.addWidget(btn_stop)
-layout.setAlignment(QtCore.Qt.AlignTop)
-
-# Configurar ventana principal
-window.setLayout(layout)
-window.setWindowTitle('Detección de objetos')
-window.show()
-app.exec_()
+# bucle principal para leer continuamente los valores del sensor y hacer predicciones
+while True:
+    etiqueta_predicha = hacer_prediccion()
+    print('Etiqueta predicha:', etiqueta_predicha)
